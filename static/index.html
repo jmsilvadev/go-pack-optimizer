@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pack Optimizer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 60%;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+    input[type="number"] {
+      padding: 5px;
+      width: 100px;
+    }
+    button {
+      padding: 5px 10px;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pack Sizes</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Size</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="sizesTable"></tbody>
+  </table>
+
+  <h2>Add Size</h2>
+  <input type="number" id="newSize" min="1" placeholder="Size" />
+  <button onclick="addSize()">Add</button>
+
+  <h2>Calculate Order</h2>
+  <input type="number" id="orderInput" min="1" placeholder="Items ordered" />
+  <button onclick="calculateOrder()">Calculate</button>
+
+  <h3>Order Result</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Pack</th>
+        <th>Total Packs</th>
+        <th>Total Items</th>
+      </tr>
+    </thead>
+    <tbody id="orderTable"></tbody>
+  </table>
+
+  <script>
+    const API = "{{ .BackendAPI }}";
+
+    async function fetchSizes() {
+      const res = await fetch(API + "/packs");
+      const data = await res.json();
+      const table = document.getElementById("sizesTable");
+      table.innerHTML = "";
+      data.data.forEach(size => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${size}</td>
+          <td><button onclick="deleteSize(${size})">Delete</button></td>
+        `;
+        table.appendChild(row);
+      });
+    }
+
+    async function addSize() {
+      const input = document.getElementById("newSize");
+      const size = parseInt(input.value);
+      if (!size) return;
+      await fetch(API + "/packs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ size })
+      });
+      input.value = "";
+      fetchSizes();
+    }
+
+    async function deleteSize(size) {
+      await fetch(`${API}/packs/${size}`, {
+        method: "DELETE"
+      });
+      fetchSizes();
+    }
+
+    async function calculateOrder() {
+      const count = parseInt(document.getElementById("orderInput").value);
+      if (!count) return;
+      const res = await fetch(API + "/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items_ordered: count })
+      });
+      const result = await res.json();
+      const table = document.getElementById("orderTable");
+      table.innerHTML = "";
+      if (result.packs.length > 0) {
+        result.packs.forEach(pack => {
+          table.innerHTML += `
+            <tr>
+              <td>${pack}</td>
+              <td>${result.total_packs}</td>
+              <td>${result.total_items}</td>
+            </tr>
+          `;
+        });
+      } else {
+        table.innerHTML = "<tr><td colspan='3'>No result</td></tr>";
+      }
+    }
+
+    fetchSizes();
+  </script>
+</body>
+</html>
