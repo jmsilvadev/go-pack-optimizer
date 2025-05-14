@@ -1,0 +1,143 @@
+openapi: 3.0.3
+info:
+  title: Pack Optimizer API
+  description: API to manage pack sizes and calculate optimal orders.
+  version: 1.0.0
+
+paths:
+  /v1/health:
+    get:
+      summary: Health check
+      description: Returns HTTP 200 if the service is running.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+
+  /v1/packs:
+    get:
+      summary: Get all pack sizes
+      description: Returns a list of available pack sizes.
+      responses:
+        '200':
+          description: List of pack sizes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SizesResponse'
+        '404':
+          description: No sizes found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+
+    post:
+      summary: Add a new pack size
+      description: Adds a new pack size to the available options.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                size:
+                  type: integer
+                  example: 500
+      responses:
+        '201':
+          description: Pack size added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+  /v1/packs/{size}:
+    delete:
+      summary: Delete a pack size
+      description: Removes a specific pack size from the database.
+      parameters:
+        - name: size
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Pack size deleted successfully
+        '400':
+          description: Invalid pack size
+        '404':
+          description: Pack size not found
+
+  /v1/order:
+    post:
+      summary: Calculate optimized order
+      description: Calculates the optimal pack combination for a given item order.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items_ordered:
+                  type: integer
+                  example: 1500
+      responses:
+        '200':
+          description: Optimization result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          description: Invalid input
+
+components:
+  schemas:
+    Response:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: size added successfully
+        data:
+          nullable: true
+
+    SizesResponse:
+      allOf:
+        - $ref: '#/components/schemas/Response'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: integer
+              example: [1000, 500, 250]
+
+    OrderResponse:
+      type: object
+      properties:
+        packs:
+          type: array
+          items:
+            type: integer
+          example: [1000, 500]
+        total_items:
+          type: integer
+          example: 1500
+        total_packs:
+          type: integer
+          example: 2

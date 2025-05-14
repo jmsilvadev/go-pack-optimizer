@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  frontend:
+    build: 
+      context: . 
+      dockerfile: Dockerfile_frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    depends_on:
+      - backend
+    environment:
+      - BACKEND_URL=http://localhost:8080/v1
+
+  backend:
+    build: 
+      context: . 
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
